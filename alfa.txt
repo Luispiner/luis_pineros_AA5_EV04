@@ -1,0 +1,448 @@
+1. estoy trabajando un proyecto en visual studio code y vue js como frontend ,
+y en el backend tengo spring tools y la base de datos en mysql workbench
+
+
+mi backend esta hecho en spring tools 
+mis diferentes partes son estas:
+______________________________________
+Usuario2Controller.java:
+
+package co.edu.sena.controller;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import co.edu.sena.models.entity.Usuario2;
+import co.edu.sena.models.service.Usuario2Service;
+
+@RestController
+@RequestMapping ("/api/usuarioslogin")
+public class Usuario2Controller {
+	
+	@Autowired Usuario2Service usuario2Service;
+	
+	// Este es el Metodo para Guardar un Usuario nuevo
+	@PostMapping
+	public Usuario2 guardar(@RequestBody Usuario2 u) {
+		return usuario2Service.save(u);
+		
+	}
+	
+	// Este es el Metodo para Realizar el login
+	@PostMapping ("/login")
+	public ResponseEntity<String> login(@RequestBody Usuario2 usuario2){
+	
+	// Aqui llama al servicio para realizar el login y obtener un mensaje de respuesta
+	String mensaje = usuario2Service.login(usuario2.getUsername(),usuario2.getPassword());
+	
+	// Devuelve una respuesta HTTP con el mensaje
+		return ResponseEntity.ok(mensaje);
+		
+	}
+________________________________
+ahora mi Usuario2ServiceImpl.java
+
+package co.edu.sena.models.service;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import co.edu.sena.models.entity.Usuario2;
+import co.edu.sena.repository.Usuario2Repository;
+
+@Service
+public class Usuario2ServiceImpl implements Usuario2Service {
+	
+	@Autowired
+	Usuario2Repository usuario2Repository;
+	
+	@Override
+	public Usuario2 save(Usuario2 u) {
+	//Aqui guarda un nuevo usuario en la base de datos
+		return usuario2Repository.save(u);
+	}
+
+	@Override
+	public String login(String user, String ctr) { 
+		// Aqui busca al usuario por su nombre en la base de datos
+		Usuario2 usuario2 = usuario2Repository.findByUsername(user);  
+		//Aqui verifica si el usuario Existe
+		if (usuario2 == null) {
+			return "Usuario no encontrado";
+		}
+		// Aqui compara la contraseña proporcionada con la almacenada
+		if (!usuario2.getPassword().equals(ctr)) { 
+			// En caso que la contraseña no sea la correcta entonces devuelve mensaje: contraseña incorrecta
+			return "Contraseña incorrecta";
+		}
+		// Aqui si la contraseña es correcta , devuelve un mensaje de inicio Exitoso
+		return "Inicio de sesión exitoso";
+	}
+}
+___________________________________________
+En Usuario2.java:
+package co.edu.sena.models.entity;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name = "usuarioslogin")
+public class Usuario2 {
+	
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@Column (name = "id_usu") // Este es el identificador unico  Autoincrementable
+	private Long idu;
+	@Column (name = "nom_usu") // Este es el Nombre del Usuario
+	private String username;
+	@Column (name = "cont_usu") // Este es la Contraseña
+	private String password;
+	public Usuario2() {
+		
+	}
+	public Usuario2(Long id, String username, String password) {
+		
+		this.idu =idu;
+		this.username = username; //Aqui se almacena  el nombre de Usuario
+		this.password = password; //Aqui esta almacena la contraseña
+	}
+	public Long getId() {
+		return idu;
+	}
+	public void setId(Long id) {
+		this.idu =idu;
+	}
+	public String getUsername() {
+		return username;
+	}
+	public void setUsername(String username) {
+		this.username = username;
+	}
+	public String getPassword() {
+		return password;
+	}
+	public void setPassword(String password) {
+		this.password = password;
+	}
+	
+	
+
+}
+_________________________________________________________
+Usuario2Service.java
+package co.edu.sena.models.service;
+
+import co.edu.sena.models.entity.Usuario2;
+public interface Usuario2Service {
+	
+	public Usuario2 save (Usuario2 u);
+	public String login(String user, String ctr);
+
+}
+________________________________________________________
+
+	
+
+2. En workbench tengo una base de datos llamada: usuariodb, y esta tiene dos tablas en una se llama usuarios y la otra usuarioslogin.
+la tabla usuarios ya me funciono bien en cuanto backend y frontend, ahora quiera que la ultima me funcione y solo me falta el componente
+frontend que esta hecho de la siguiente manera:
+
+2.1 Componentes: esta formado por : FormularioLogin.vue y TablaLogin.vue ;ademas de (FormularioUsuario.vue,HelloWord.vue y TablaUsuario.vue) que funcionan bien con la tabla usuarios.
+
+2.2 los View : esta formado por : LoginView.vue y App.vue ; ademas de (HomeView.vue ,UsuarioView.vue) de la tabla usuarios que tambien funcionan bien.
+
+2.3 router : tiene su index.js : 
+
+2.4 store : tiene su index js.
+
+Acontinuacion me permito enviar los codigos de los componentes fontend visualstudiocode de mi tabla usuarioslogin
+____________________
+A. FormularioLogin.vue.___________________
+<template>
+  <div class="container">
+    <h1>Formulario de Login</h1>
+    <form id="login-form" @submit.prevent="iniciarSesion">
+      <div class="form-group">
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username" required v-model="username" />
+      </div>
+      <div class="form-group">
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required v-model="password" />
+      </div>
+      <button type="submit" id="iniciar-sesion" name="iniciar-sesion">Iniciar Sesión</button>
+      <button type="button" id="guardar-contrasena" name="guardar-contrasena" @click="guardarUsuarioPassword">Guardar Contraseña</button>
+    </form>
+  </div>
+</template>
+
+<script>
+import axios from "axios";
+
+export default {
+  data() {
+    return {
+      username: "",
+      password: "",
+    };
+  },
+  methods: {
+    iniciarSesion() {
+      axios
+        .post("http://localhost:8080/api/usuarioslogin/login", {
+          username: this.username,
+          password: this.password,
+        })
+        .then((response) => {
+          console.log("Inicio de sesión exitoso:", response.data);
+          alert("Inicio de sesión exitoso");
+          this.username = "";
+          this.password = "";
+        })
+        .catch((error) => {
+          console.error("Error al iniciar sesión", error);
+        });
+    },
+    guardarUsuarioPassword() {
+      // Aquí debes realizar la lógica para guardar usuario y contraseña en tu backend.
+      // Puedes hacer una solicitud POST similar a la que usamos para iniciar sesión,
+      // pero a un endpoint diferente que maneje el guardado.
+      // Ejemplo:
+       axios.post("http://localhost:8080/api/usuarioslogin/guardar", {
+       username: this.username,
+        password: this.password,
+      })
+      .then((response) => {
+        console.log("Usuario y contraseña guardados:", response.data);
+       alert("Usuario y contraseña guardados");
+       this.username = "";
+         this.password = "";
+      })
+       .catch((error) => {
+         console.error("Error al guardar usuario y contraseña", error);
+       });
+    },
+  },
+};
+</script>
+
+
+  ____________________________________________________
+B. TablaLogin.vue
+
+<template>
+  <div class="container">
+    <h1>Tabla de Login</h1>
+    <table>
+      <thead>
+        <tr>
+          <th>idu</th>
+          <th>username</th>
+          <th>password</th>
+          
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="usuario in usuarioslogin" :key="usuario.idu">
+        <td>{{ usuario.idu }}</td>
+        <td>{{ usuario.username }}</td>
+       <td>{{ usuario.password }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</template>
+
+<script>
+import axios from "axios";
+
+export default {
+  data() {
+    return {
+      usuarioslogin: [],
+    };
+  },
+  methods: {
+    obtenerUsuarios() {
+      // Método para obtener la lista de todos los usuarios
+      axios.get("http://localhost:8080/api/usuarioslogin/listar")
+        .then((response) => {
+          this.usuarioslogin = response.data;
+        })
+        .catch((error) => {
+          console.error("Error al obtener la lista de usuarios logeados:", error);
+        });
+    },
+  },
+  mounted() {
+    // Llamar al método para obtener la lista de usuarios al cargar el componente
+    this.obtenerUsuarios();
+  },
+};
+
+
+   
+</script>
+  _____________________________________________________-
+c: LoginView.vue
+<template>
+  <div class="Usuariologin">
+    <div class="components">
+    <FormularioLogin/> 
+    <TablaLogin /> 
+  </div>
+</div>
+</template>
+
+<script>
+  import FormularioLogin from "@/components/FormularioLogin.vue";
+  import TablaLogin from "@/components/TablaLogin.vue";
+
+  export default {
+    name: 'LoginView', 
+    components: {
+      FormularioLogin, 
+      TablaLogin, // Cambia TablaUsuario a TablaLogin
+    }
+  }
+</script>
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background-color: #afad4a;
+  margin: 0;
+  padding: 0;
+}
+
+.components {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  grid-auto-rows: 1fr;
+}
+.container {
+  /* max-width: 400px;*/
+  margin: 1rem;
+  padding: 1rem;
+  background-color: #7892af;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+  border-radius: 5px;
+}
+
+h1 {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+form {
+  padding: 2%;
+}
+
+label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+}
+button {
+  display: block;
+  width: 100%;
+  padding: 10%;
+  background-color: #a7ad52;
+  color: #fff;
+  border: none;
+  box-shadow: 0 0 10px rgba(0, 0, 0.2);
+  border-radius: 5px;
+  cursor: pointer;
+
+}
+button:hover {
+  background-color: #0056b3;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+  
+}
+
+th, td {
+  padding: 10px;
+  text-align: left;
+/*   border-bottom: 1px solid #ddd;*/
+border-style: solid;
+  
+}
+tr{
+
+  border-style: solid;
+}
+
+th {
+  background-color: #3700ff;
+  color: #fff;
+  border-style: solid;
+}
+
+tr:hover {
+  background-color: #3a38b8;
+}
+</style>
+
+______________________________________
+D: App.vue
+<template>
+  <nav>
+    <router-link to="/">Home</router-link> |
+    <router-link to="/Login">Login</router-link>|
+    <router-link to="/Usuario">Usuario</router-link>
+  </nav>
+  <router-view/>
+</template>
+
+<style>
+#app {
+  font-family: Avenir, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-align: center;
+  color: #2c3e50;
+}
+
+nav {
+  padding: 30px;
+}
+
+nav a {
+  font-weight: bold;
+  color: #2c3e50;
+}
+
+nav a.router-link-exact-active {
+  color: #42b983;
+}
+</style>
+
+
+
+

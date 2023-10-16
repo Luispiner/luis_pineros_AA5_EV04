@@ -1,0 +1,417 @@
+hola continuo con mi proyecto , en el backend estoy trabajando con spring tools y mysql work bench , 
+en el cual tengo 3 metodos (me estan trabajando bien y los he probado con postman y tengo buenos resultados)
+Ahora que quiero conectar a mi frontend en visual studio code con vue js.
+por favor ayudame a corregir mis codigos de programacion paso a paso para que funcionen
+ y dame el codigo al final completo parte por parte para probarlo
+por favor:
+
+1. presento en mi codigo backend con los 3 metodos:
+
+___________________________________
+ package co.edu.sena.controller;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import co.edu.sena.models.entity.Usuario2;
+import co.edu.sena.models.service.Usuario2Service;
+
+@RestController
+@RequestMapping("/api/usuarioslogin")
+@CrossOrigin(origins = "*", methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.DELETE, RequestMethod.PUT})
+public class Usuario2Controller {
+
+    @Autowired
+    private Usuario2Service usuario2Service;
+
+    // Este es el Método para Guardar un Usuario nuevo
+    @PostMapping
+    public Usuario2 guardar(@RequestBody Usuario2 u) {
+        return usuario2Service.save(u);
+    }
+
+    // Este es el Método para Realizar el login
+    @PostMapping("/login")
+    public ResponseEntity<String> login(@RequestBody Usuario2 usuario2) {
+        // Aquí llama al servicio para realizar el login y obtener un mensaje de respuesta
+        String mensaje = usuario2Service.login(usuario2.getUsername(), usuario2.getPassword());
+        // Devuelve una respuesta HTTP con el mensaje
+        return ResponseEntity.ok(mensaje);
+    }
+      //Aqui se llama al servicio para listar los usuarios logeados
+    @GetMapping("/listarlogeados")
+    public List<Usuario2> listarUsuariosLogeados() {
+        // Aquí obtienes y devuelves la lista de usuarios logeados desde tu servicio
+        return usuario2Service.listarUsuariosLogeados();
+    }
+}
+
+____________________________
+
+Ahora te presento mi frontent en visual studio code y vue js:
+  los componentes son:
+
+1. FormularioLogin.vue
+__________________________________
+
+
+<template>
+    <div class="container">
+      <h1>Formulario de inicio de sesión</h1>
+      <form id="login-form" @submit.prevent="iniciarSesion">
+        <div class="form-group">
+          <label for="username">Username:</label>
+          <input type="text" id="username" name="username" required v-model="username" />
+        </div>
+        <div class="form-group">
+          <label for="password">Password:</label>
+          <input type="password" id="password" name="password" required v-model="password" />
+        </div>
+        <button type="submit" id="iniciar-sesion" name="iniciar-sesion">Iniciar Sesión</button>
+        <button type="button" id="guardar-contrasena" name="guardar-contrasena" @click="guardarUsuarioPassword">Guardar Contraseña</button>
+        <button type="button" id="listar-logeados" name="listar-logeados" @click="listarLogeadosContraseña">Listar Logeados Contraseña</button>
+      </form>
+    </div>
+  </template>
+  
+  <script>
+  import axios from "axios";
+  
+  const API_URL = process.env.API_URL || "http://localhost:8080/api";
+  
+  export default {
+    data() {
+      return {
+        username: "",
+        password: "",
+      };
+    },
+    methods: {
+      iniciarSesion() {
+        axios
+          .post(`${API_URL}/usuarioslogin/login`, {
+            username: this.username,
+            password: this.password,
+          })
+          .then((response) => {
+            if (response.data.success) {
+              window.location.href = "/home";
+            } else {
+              alert(response.data.message);
+            }
+          })
+          .catch((error) => {
+            alert("Error al iniciar sesión: " + error.message);
+          });
+      },
+      guardarUsuarioPassword() {
+        axios
+          .post(`${API_URL}/usuarioslogin/guardar`, {
+            username: this.username,
+            password: this.password,
+          })
+          .then(() => {
+            alert("Usuario y contraseña guardados con éxito");
+            this.username = "";
+            this.password = "";
+          })
+          .catch((error) => {
+            alert("Error al guardar usuario y contraseña: " + error.message);
+          });
+      },
+      listarLogeadosContraseña() {
+        axios
+          .get(`${API_URL}/usuarioslogin/listarlogeados`)
+          .then((response) => {
+            this.usuarioslogin = response.data;
+          })
+          .catch((error) => {
+            console.error(
+              "Error al obtener la lista de usuarios logeados:",
+              error
+            );
+          });
+      },
+    },
+  };
+  </script>
+  
+___________________________
+2. TablaLogin.vue
+_______________________
+
+<template>
+  <div class="container">
+    <h1>Tabla de Login</h1>
+    <table>
+      <thead>
+        <tr>
+          <th>idu</th>
+          <th>username</th>
+          <th>password</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="usuario in usuarioslogin" :key="usuario.idu">
+          <td>{{ usuario.idu }}</td>
+          <td>{{ usuario.username }}</td>
+          <td>{{ usuario.password }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</template>
+
+<script>
+import axios from "axios";
+
+const API_URL = process.env.API_URL || "http://localhost:8080/api";
+
+export default {
+  data() {
+    return {
+      usuarioslogin: [],
+    };
+  },
+  methods: {
+    obtenerUsuarios() {
+      axios
+        .get(`${API_URL}/usuarioslogin/listarlogeados`)
+        .then((response) => {
+          this.usuarioslogin = response.data;
+        })
+        .catch((error) => {
+          console.error(
+            "Error al obtener la lista de usuarios logeados:",
+            error
+          );
+        });
+    },
+  },
+  mounted() {
+    this.obtenerUsuarios();
+  },
+};
+</script>
+
+______________________
+3. mis views son:
+LoginView.vue
+-------------------------
+
+<template>
+  <div class="Usuariologin">
+    <div class="components">
+    <FormularioLogin/> 
+    <TablaLogin /> 
+  </div>
+</div>
+</template>
+
+<script>
+  import FormularioLogin from "@/components/FormularioLogin.vue";
+  import TablaLogin from "@/components/TablaLogin.vue";
+
+  export default {
+    name: 'LoginView', 
+    components: {
+      FormularioLogin, 
+      TablaLogin, 
+    }
+  }
+</script>
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background-color: #afad4a;
+  margin: 0;
+  padding: 0;
+}
+
+.components {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  grid-auto-rows: 1fr;
+}
+.container {
+  /* max-width: 400px;*/
+  margin: 1rem;
+  padding: 1rem;
+  background-color: #7892af;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+  border-radius: 5px;
+}
+
+h1 {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+form {
+  padding: 2%;
+}
+
+label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+}
+button {
+  display: block;
+  width: 100%;
+  padding: 10%;
+  background-color: #a7ad52;
+  color: #fff;
+  border: none;
+  box-shadow: 0 0 10px rgba(0, 0, 0.2);
+  border-radius: 5px;
+  cursor: pointer;
+
+}
+button:hover {
+  background-color: #0056b3;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+  
+}
+
+th, td {
+  padding: 10px;
+  text-align: left;
+/*   border-bottom: 1px solid #ddd;*/
+border-style: solid;
+  
+}
+tr{
+
+  border-style: solid;
+}
+
+th {
+  background-color: #3700ff;
+  color: #fff;
+  border-style: solid;
+}
+
+tr:hover {
+  background-color: #3a38b8;
+}
+</style>
+
+______________________
+4. La App.vue es:
+______________________
+<template>
+  <nav>
+    <router-link to="/">Home</router-link> |
+    <router-link to="/Login">Login</router-link>|
+    <router-link to="/Usuario">Usuario</router-link>
+  </nav>
+  <router-view/>
+</template>
+
+<style>
+#app {
+  font-family: Avenir, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-align: center;
+  color: #2c3e50;
+}
+
+nav {
+  padding: 30px;
+}
+
+nav a {
+  font-weight: bold;
+  color: #2c3e50;
+}
+
+nav a.router-link-exact-active {
+  color: #42b983;
+}
+</style>
+________________________________
+5. En mi router el :index.js
+_____________________________
+import { createRouter, createWebHashHistory } from 'vue-router'
+import HomeView from '../views/HomeView.vue'
+
+const routes = [
+  {
+    path: '/',
+    name: 'home',
+    component: HomeView
+  },
+  {
+    path: '/login',
+    name: 'login',
+    // route level code-splitting
+    // this generates a separate chunk (about.[hash].js) for this route
+    // which is lazy-loaded when the route is visited.
+    component: () => import(/* webpackChunkName: "login" */ '../views/LoginView.vue')
+  },
+  {
+    path: '/usuario',
+    name: 'Usuario',
+    component:() =>import (/* webpackChukName: "login" */ '../views/UsuarioView.vue')
+
+  }
+  
+]
+
+const router = createRouter({
+  history: createWebHashHistory(),
+  routes
+})
+
+export default router
+__________________________________________
+6. y en mi store el index.js
+_____________________________________
+import { createStore } from 'vuex'
+
+export default createStore({
+  state: {
+  },
+  getters: {
+  },
+  mutations: {
+  },
+  actions: {
+  },
+  modules: {
+  }
+})
+
+
+
+
+
+

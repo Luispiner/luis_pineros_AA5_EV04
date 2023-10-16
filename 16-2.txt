@@ -1,0 +1,81 @@
+<template>
+    <div class="container">
+      <h1>Formulario de inicio de sesión</h1>
+      <form id="login-form" @submit.prevent="iniciarSesion">
+        <div class="form-group">
+          <label for="username">Username:</label>
+          <input type="text" id="username" name="username" required v-model="username" />
+        </div>
+        <div class="form-group">
+          <label for="password">Password:</label>
+          <input type="password" id="password" name="password" required v-model="password" />
+        </div>
+        <button type="submit" id="iniciar-sesion" name="iniciar-sesion">Iniciar Sesión</button><br>
+        <button type="button" id="guardar-contrasena" name="guardar-contrasena" @click="guardarUsuarioPassword">Guardar Contraseña</button><br>
+        <button type="button" id="listar-logeados" name="listar-logeados" @click="listarLogeadosContraseña">Listar Logeados Contraseña</button><br>
+      </form>
+    </div>
+  </template>
+  
+  <script>
+  import axios from "axios";
+  
+  const API_URL = process.env.API_URL || "http://localhost:8080/api/usuarioslogin";
+  
+  export default {
+    data() {
+      return {
+        username: "",
+        password: "",
+      };
+    },
+    methods: {
+      iniciarSesion() {
+        axios
+          .post(`${API_URL}/usuarioslogin/login`, {
+            username: this.username,
+            password: this.password,
+          })
+          .then((response) => {
+            if (response.data.success) {
+              window.location.href = "/home";
+            } else {
+              alert(response.data.message);
+            }
+          })
+          .catch((error) => {
+            alert("Error al iniciar sesión: " + error.message);
+          });
+      },
+      guardarUsuarioPassword() {
+        axios
+          .post(`${API_URL}/usuarioslogin/guardar`, {
+            username: this.username,
+            password: this.password,
+          })
+          .then(() => {
+            alert("Usuario y contraseña guardados con éxito");
+            this.username = "";
+            this.password = "";
+          })
+          .catch((error) => {
+            alert("Error al guardar usuario y contraseña: " + error.message);
+          });
+      },
+      listarLogeadosContraseña() {
+        axios
+          .get(`${API_URL}/usuarioslogin/listarlogeados`)
+          .then((response) => {
+            this.usuarioslogin = response.data;
+          })
+          .catch((error) => {
+            console.error(
+              "Error al obtener la lista de usuarios logeados:",
+              error
+            );
+          });
+      },
+    },
+  };
+  </script>
+  
